@@ -1,0 +1,12 @@
+.mob{
+    padding-left: 20px;
+    padding-right: 20px;
+    border: 1px solid black;
+}
+
+.mob-title{
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: bold;
+    text-shadow: 0 3px 10px #a800ff;
+}
