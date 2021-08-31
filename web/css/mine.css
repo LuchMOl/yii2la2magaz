@@ -10,3 +10,12 @@
     font-weight: bold;
     text-shadow: 0 3px 10px #a800ff;
 }
+
+.mob-param-table{
+    max-width: 100%;
+    border-collapse: separate;
+}
+
+.mob_skill{
+    line-height: 1.15em;
+}

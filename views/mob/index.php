@@ -26,10 +26,10 @@ $count = 0;
     <?php endif; ?>
 </div>
 
-<?php foreach ($mobForPage as $mob) : ?>
+<?php foreach ($mobsForPage as $mob) : ?>
 
     <?php if ($count % COUNT_OF_ROW == 0): ?><div class="row justify-content-center"><?php endif; ?>
-        <a href="">
+        <a href="view/?id=<?= $mob->id ?>">
             <div class="col-<?= intdiv(12, COUNT_OF_ROW); ?> mob">
 
                 <div class="row">
