@@ -18,18 +18,23 @@ class MobController extends \yii\web\Controller
 
     public function actionIndex()
     {
-        //var_dump($_GET['Типы-атаки']);die;
+        
         $quantityItemInPage = 30;
-
-        $quantityPages = $this->getQuantityPages($quantityItemInPage);
-
-        $currentPageNumber = $this->checkPagesRange($quantityPages);
 
         $attackTypeList = $this->getParamList($this->getParamId('Тип атаки'));
 
         $raceList = $this->getRaceList();
 
-        $mobsForPage = $this->getMobsForPage($quantityItemInPage, $currentPageNumber);
+        $idsMobs = $this->getIdsMobsWithFilter();
+
+        $quantityPages = $this->getQuantityPages($idsMobs, $quantityItemInPage);
+
+        $currentPageNumber = $this->checkPagesRange($quantityPages);
+
+        $mobsForPage = $this->getMobsForPage($idsMobs, $quantityItemInPage, $currentPageNumber);
+
+
+        //var_dump($currentPageNumber);die;
 
         return $this->render('index', compact('mobsForPage',
                                 'currentPageNumber',
@@ -65,65 +70,90 @@ class MobController extends \yii\web\Controller
         return $this->render('singleMob', compact('mob', 'mobParam', 'mobSkill', 'mobDrop', 'mobSweep'));
     }
 
-    public function getQuantityPages($quantityItemInPage)
+    public function getQuantityPages($idsMobs, $quantityItemInPage)
     {
-        $mobCount = Mob::find()
-                ->count();
+        if ($idsMobs === 'all') {
+            $mobCount = Mob::find()
+                    ->count();
+        } else {
+            $mobCount = count($idsMobs);
+        }
 
         $quantityPages = ceil($mobCount / $quantityItemInPage);
+
         return $quantityPages;
     }
 
     public function checkPagesRange($quantityPages)
     {
-        if (isset($_GET['pageNumber'])) {
+        if (isset($_GET['page-number'])) {
 
-            $currentPageNumber = $_GET['pageNumber'];
+            $currentPageNumber = $_GET['page-number'];
 
             if ($currentPageNumber < 1) {
                 $currentPageNumber = 1;
-                $this->redirect('/mob/?pageNumber=1');
+                $this->redirect('/mob/?page-number=1');
             } elseif ($currentPageNumber > $quantityPages) {
                 $currentPageNumber = $quantityPages;
-                $this->redirect('/mob/?pageNumber=' . $quantityPages);
+                $this->redirect('/mob/?page-number=' . $quantityPages);
             }
         } else {
             $currentPageNumber = 1;
-            $this->redirect('/mob/?pageNumber=1');
+            $this->redirect('/mob/?page-number=1');
         }
         return $currentPageNumber;
     }
 
-    public function getMobsForPage($quantityItemInPage, $currentPageGet)
+    public function getIdsMobsWithFilter()
     {
-        if (isset($_GET['attackType'])) {
+        if ($_GET['attack-type']) {
 
-            $mobsIdWithAttackType = MobParam::find()
-                    ->where(['paramValue' => $_GET['attackType']])
+            $attackTypeValues = explode(',', $_GET['attack-type']);
+
+            $idsMobs = MobParam::find()
+                    ->where(['paramValue' => $attackTypeValues])
                     ->asArray()
                     ->all();
-
-            $mobsIdWithAttackType = ArrayHelper::getColumn($mobsIdWithAttackType, 'mobId');
-
-            $mobsForPage = Mob::find()
-                    ->where(['id' => $mobsIdWithAttackType])
-                    ->offset($quantityItemInPage * ($currentPageGet - 1))
-                    ->limit($quantityItemInPage)
-                    ->all();
+            $idsMobs = ArrayHelper::getColumn($idsMobs, 'mobId');
         } elseif ($_GET['race']) {
-            $skillId = $this->getSkillIdWhere($title = 'Race', $description = $_GET['race']);
 
-            $mobsIdWithRace = MobSkill::find()
+            $raceValues = explode(',', $_GET['race']);
+
+            $skillId = $this->getSkillIdWhere($title = 'Race', $description = $raceValues);
+
+            $idsMobs = MobSkill::find()
                     ->select('mobId')
                     ->where(['skillId' => $skillId])
                     ->asArray()
                     ->all();
-            //var_dump($mobsIdWithRace);die;
 
-            $mobsIdWithRace = ArrayHelper::getColumn($mobsIdWithRace, 'mobId');
+            $idsMobs = ArrayHelper::getColumn($idsMobs, 'mobId');
+        } elseif ($_GET['photo']) {
 
+            $idsMobs = Mob::find()
+                    ->select('id')
+                    ->where(['not', ['imageFileName' => '']])
+                    ->asArray()
+                    ->all();
+        } else {
+            $idsMobs = 'all';
+        }
+
+
+        return $idsMobs;
+    }
+
+    public function getMobsForPage($idsMobs, $quantityItemInPage, $currentPageGet)
+    {
+        //var_dump($idsMobs);die;
+        if ($idsMobs !== 'all') {
             $mobsForPage = Mob::find()
-                    ->where(['id' => $mobsIdWithRace])
+                    ->where(['id' => $idsMobs])
+                    ->offset($quantityItemInPage * ($currentPageGet - 1))
+                    ->limit($quantityItemInPage)
+                    ->all();
+        } else {
+            $mobsForPage = Mob::find()
                     ->offset($quantityItemInPage * ($currentPageGet - 1))
                     ->limit($quantityItemInPage)
                     ->all();

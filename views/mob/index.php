@@ -4,7 +4,11 @@
 define("MOB_IMAGE_PATH", "/i/l2db/mob/");
 define("COUNT_OF_ROW", 5);
 $count = 0;
-//var_dump($listsForSidebarFilters);die;
+$currentGetParamString = strstr($_SERVER["REQUEST_URI"], '&');
+$currentGetAttackTypeString = isset($_GET['attack-type']) ? $_GET['attack-type'] . ',' : '';
+$currentGetAttackTypeArray = isset($_GET['attack-type']) ? explode(',', $_GET['attack-type']) : [];
+$currentGetRaceString = isset($_GET['race']) ? $_GET['race'] . ',' : '';
+$currentGetRaceArray = isset($_GET['race']) ? explode(',', $_GET['race']) : [];
 ?>
 
 <div class="sidebar-container">
@@ -15,32 +19,70 @@ $count = 0;
     <ul class="sidebar-navigation">
         <li class="header">Тип атаки</li>
         <?php foreach ($attackTypeList as $item) : ?>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" <?= $item == $_GET['attackType'] ? 'checked' : ''; ?>>
-                <label class="form-check-label" for="flexCheckDefault">
-                    <li><a href="?pageNumber=<?= $currentPageNumber; ?>&attackType=<?= $item; ?>"><?= $item; ?></a></li>
-                </label>
-            </div>
+            <li>
+                <?php if (in_array($item, $currentGetAttackTypeArray)) : ?>
+                    <?php $newGetAttackTypeArray = array_diff($currentGetAttackTypeArray, [$item]); ?>
+                    <a href="?page-number=1<?php if ($newGetAttackTypeArray) : ?>&attack-type=<?= implode(",", $newGetAttackTypeArray); ?><?php endif ?>">
+                        <div class="form-check">
+                            <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" checked>
+                            <label class="form-check-label" for="flexCheckDefault">
+                                <?= $item; ?>
+                            </label>
+                        </div>
+                    </a>
+                <?php else : ?>
+                    <a href="?page-number=1&attack-type=<?= $currentGetAttackTypeString . $item; ?>">
+                        <div class="form-check">
+                            <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" >
+                            <label class="form-check-label" for="flexCheckDefault">
+                                <?= $item; ?>
+                            </label>
+                        </div>
+                    </a>
+                <?php endif; ?>
+            </li>
         <?php endforeach; ?>
     </ul>
 
     <ul class="sidebar-navigation">
         <li class="header">Рассы</li>
         <?php foreach ($raceList as $item) : ?>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" <?= $item == $_GET['race'] ? 'checked' : ''; ?>>
-                <label class="form-check-label" for="flexCheckDefault">
-                    <li><a href="?pageNumber=<?= $currentPageNumber; ?>&race=<?= $item; ?>"><?= $item; ?></a></li>
-                </label>
-            </div>
+        <?php $item = strtolower($item); ?>
+            <li>
+                <?php if (in_array($item, $currentGetRaceArray)) : ?>
+                    <?php $newGetRaceArray = array_diff($currentGetRaceArray, [$item]); ?>
+                    <a href="?page-number=1&race=<?= implode(",", $newGetRaceArray); ?>">
+                        <div class="form-check">
+                            <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" checked>
+                            <label class="form-check-label" for="flexCheckDefault">
+                                <?= $item; ?>
+                            </label>
+                        </div>
+                    </a>
+                <?php else : ?>
+                    <a href="?page-number=1&race=<?= $currentGetRaceString . $item; ?>">
+                        <div class="form-check">
+                            <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" >
+                            <label class="form-check-label" for="flexCheckDefault">
+                                <?= $item; ?>
+                            </label>
+                        </div>
+                    </a>
+                <?php endif; ?>
+            </li>
         <?php endforeach; ?>
     </ul>
 
     <ul class="sidebar-navigation">
-        <li class="header">С фото без фото</li>
+        <li class="header">Фото</li>
         <li>
-            <a href="#">
-                <i class="fa fa-users" aria-hidden="true"></i> Friends
+            <a href="?page-number=1&photo=1">
+                <div class="form-check">
+                    <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $_GET['photo'] ? 'checked' : ''; ?>>
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Только с фото
+                    </label>
+                </div>
             </a>
         </li>
     </ul>
@@ -60,27 +102,26 @@ $count = 0;
 
     <div class="container-fluid">
 
-        <!-- Main component for a primary marketing message or call to action -->
         <div class="jumbotron">
-
+            <?= $quantityPages; ?>
             <!-- BUTTONS -->
             <div class="row justify-content-center">
                 <?php if ($currentPageNumber > 1): ?>
-                    <a href="?pageNumber=1"> <button type="button" class="btn btn-info"><<</button> </a>
-                    <a href="?pageNumber=<?= $currentPageNumber - 1; ?>"> <button type="button" class="btn btn-info"><</button> </a>
+                    <a href="?page-number=1&<?= $currentGetParamString; ?>"> <button type="button" class="btn btn-info"><<</button> </a>
+                    <a href="?page-number=<?= $currentPageNumber - 1 . $currentGetParamString; ?>"> <button type="button" class="btn btn-info"><</button> </a>
                 <?php endif; ?>
 
-                <button type="button" class="btn btn-info">...</button>
+                <button type="button" class="btn btn-info current-page-button"><?= $currentPageNumber; ?></button>
 
                 <?php if ($currentPageNumber < $quantityPages): ?>
-                    <a href="?pageNumber=<?= $currentPageNumber + 1; ?>"> <button type="button" class="btn btn-info"><?= $currentPageNumber + 1; ?></button> </a>
+                    <a href="?page-number=<?= $currentPageNumber + 1 . $currentGetParamString; ?>"> <button type="button" class="btn btn-info"><?= $currentPageNumber + 1; ?></button> </a>
 
                     <?php if ($currentPageNumber < $quantityPages - 1): ?>
-                        <a href="?pageNumber=<?= $currentPageNumber + 2; ?>"> <button type="button" class="btn btn-info"><?= $currentPageNumber + 2; ?></button> </a>
+                        <a href="?page-number=<?= $currentPageNumber + 2 . $currentGetParamString; ?>"> <button type="button" class="btn btn-info"><?= $currentPageNumber + 2; ?></button> </a>
                     <?php endif; ?>
 
-                    <a href="?pageNumber=<?= $currentPageNumber + 1; ?>"> <button type="button" class="btn btn-info">></button> </a>
-                    <a href="?pageNumber=<?= $quantityPages; ?>"> <button type="button" class="btn btn-info">>></button> </a>
+                    <a href="?page-number=<?= $currentPageNumber + 1 . $currentGetParamString; ?>"> <button type="button" class="btn btn-info">></button> </a>
+                    <a href="?page-number=<?= $quantityPages . $currentGetParamString; ?>"> <button type="button" class="btn btn-info">>></button> </a>
                 <?php endif; ?>
             </div>
 

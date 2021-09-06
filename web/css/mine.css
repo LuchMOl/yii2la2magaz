@@ -20,6 +20,12 @@
     line-height: 1.15em;
 }
 
+.current-page-button{
+    color: #000;
+    font-weight: bold;
+    background-color: #e9ecef;
+}
+
 .sidebar-container {
     position: fixed;
     width: 220px;
