@@ -1,13 +1,19 @@
 <?php
+
+namespace app\views;
+
+use app\services\FilterService;
+
 /* @var $this yii\web\View */
+
+$filterService = new FilterService();
 
 define("MOB_IMAGE_PATH", "/i/l2db/mob/");
 define("COUNT_OF_ROW", 5);
+
 $count = 0;
 $currentGetParamString = strstr($_SERVER["REQUEST_URI"], '&');
-$currentGetAttackTypeString = isset($_GET['attack-type']) ? $_GET['attack-type'] . ',' : '';
 $currentGetAttackTypeArray = isset($_GET['attack-type']) ? explode(',', $_GET['attack-type']) : [];
-$currentGetRaceString = isset($_GET['race']) ? $_GET['race'] . ',' : '';
 $currentGetRaceArray = isset($_GET['race']) ? explode(',', $_GET['race']) : [];
 ?>
 
@@ -18,57 +24,32 @@ $currentGetRaceArray = isset($_GET['race']) ? explode(',', $_GET['race']) : [];
 
     <ul class="sidebar-navigation">
         <li class="header">Тип атаки</li>
-        <?php foreach ($attackTypeList as $item) : ?>
+        <?php foreach ($attackTypeList as $listElement) : ?>
             <li>
-                <?php if (in_array($item, $currentGetAttackTypeArray)) : ?>
-                    <?php $newGetAttackTypeArray = array_diff($currentGetAttackTypeArray, [$item]); ?>
-                    <a href="?page-number=1<?php if ($newGetAttackTypeArray) : ?>&attack-type=<?= implode(",", $newGetAttackTypeArray); ?><?php endif ?>">
-                        <div class="form-check">
-                            <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" checked>
-                            <label class="form-check-label" for="flexCheckDefault">
-                                <?= $item; ?>
-                            </label>
-                        </div>
-                    </a>
-                <?php else : ?>
-                    <a href="?page-number=1&attack-type=<?= $currentGetAttackTypeString . $item; ?>">
-                        <div class="form-check">
-                            <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" >
-                            <label class="form-check-label" for="flexCheckDefault">
-                                <?= $item; ?>
-                            </label>
-                        </div>
-                    </a>
-                <?php endif; ?>
+                <a href="?<?= $filterService->rebuildAttackTypeGetParameter($listElement); ?>">
+                    <div class="form-check">
+                        <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $filterService->checked($listElement, $currentGetAttackTypeArray); ?>>
+                        <label class="form-check-label" for="flexCheckDefault">
+                            <?= $listElement; ?>
+                        </label>
+                    </div>
+                </a>
             </li>
         <?php endforeach; ?>
     </ul>
 
     <ul class="sidebar-navigation">
         <li class="header">Рассы</li>
-        <?php foreach ($raceList as $item) : ?>
-        <?php $item = strtolower($item); ?>
+        <?php foreach ($raceList as $listElement) : ?>
             <li>
-                <?php if (in_array($item, $currentGetRaceArray)) : ?>
-                    <?php $newGetRaceArray = array_diff($currentGetRaceArray, [$item]); ?>
-                    <a href="?page-number=1&race=<?= implode(",", $newGetRaceArray); ?>">
-                        <div class="form-check">
-                            <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" checked>
-                            <label class="form-check-label" for="flexCheckDefault">
-                                <?= $item; ?>
-                            </label>
-                        </div>
-                    </a>
-                <?php else : ?>
-                    <a href="?page-number=1&race=<?= $currentGetRaceString . $item; ?>">
-                        <div class="form-check">
-                            <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" >
-                            <label class="form-check-label" for="flexCheckDefault">
-                                <?= $item; ?>
-                            </label>
-                        </div>
-                    </a>
-                <?php endif; ?>
+                <a href="?<?= $filterService->rebuildRaceGetParameter($listElement); ?>">
+                    <div class="form-check">
+                        <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $filterService->checked($listElement, $currentGetRaceArray); ?>>
+                        <label class="form-check-label" for="flexCheckDefault">
+                            <?= $listElement; ?>
+                        </label>
+                    </div>
+                </a>
             </li>
         <?php endforeach; ?>
     </ul>
@@ -76,9 +57,9 @@ $currentGetRaceArray = isset($_GET['race']) ? explode(',', $_GET['race']) : [];
     <ul class="sidebar-navigation">
         <li class="header">Фото</li>
         <li>
-            <a href="?page-number=1&photo=1">
+            <a href="?<?= $filterService->rebuildPhotoGetParameter(); ?>">
                 <div class="form-check">
-                    <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $_GET['photo'] ? 'checked' : ''; ?>>
+                    <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $_GET['with-photo'] ? 'checked' : ''; ?>>
                     <label class="form-check-label" for="flexCheckDefault">
                         Только с фото
                     </label>
@@ -107,7 +88,7 @@ $currentGetRaceArray = isset($_GET['race']) ? explode(',', $_GET['race']) : [];
             <!-- BUTTONS -->
             <div class="row justify-content-center">
                 <?php if ($currentPageNumber > 1): ?>
-                    <a href="?page-number=1&<?= $currentGetParamString; ?>"> <button type="button" class="btn btn-info"><<</button> </a>
+                    <a href="?page-number=1<?= !$currentGetParamString ?: $currentGetParamString; ?>"> <button type="button" class="btn btn-info"><<</button> </a>
                     <a href="?page-number=<?= $currentPageNumber - 1 . $currentGetParamString; ?>"> <button type="button" class="btn btn-info"><</button> </a>
                 <?php endif; ?>
 

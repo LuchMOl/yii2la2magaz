@@ -18,7 +18,7 @@ class MobController extends \yii\web\Controller
 
     public function actionIndex()
     {
-        
+
         $quantityItemInPage = 30;
 
         $attackTypeList = $this->getParamList($this->getParamId('Тип атаки'));
@@ -86,7 +86,7 @@ class MobController extends \yii\web\Controller
 
     public function checkPagesRange($quantityPages)
     {
-        if (isset($_GET['page-number'])) {
+        if ($_GET['page-number']) {
 
             $currentPageNumber = $_GET['page-number'];
 
@@ -120,6 +120,7 @@ class MobController extends \yii\web\Controller
             $raceValues = explode(',', $_GET['race']);
 
             $skillId = $this->getSkillIdWhere($title = 'Race', $description = $raceValues);
+            $skillId = ArrayHelper::getColumn($skillId, 'id');
 
             $idsMobs = MobSkill::find()
                     ->select('mobId')
@@ -201,7 +202,8 @@ class MobController extends \yii\web\Controller
                 ->select('id')
                 ->andWhere(['title' => $title])
                 ->andWhere(['description' => $description])
-                ->one();
+                ->asArray()
+                ->all();
         //var_dump($skillId);die;
         return $skillId;
     }
