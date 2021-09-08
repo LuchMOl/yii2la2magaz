@@ -26,6 +26,7 @@ class MobController extends \yii\web\Controller
         $raceList = $this->getRaceList();
 
         $idsMobs = $this->getIdsMobsWithFilter();
+        $countMobs = count($idsMobs);
 
         $quantityPages = $this->getQuantityPages($idsMobs, $quantityItemInPage);
 
@@ -33,11 +34,11 @@ class MobController extends \yii\web\Controller
 
         $mobsForPage = $this->getMobsForPage($idsMobs, $quantityItemInPage, $currentPageNumber);
 
-
         //var_dump($currentPageNumber);die;
 
         return $this->render('index', compact('mobsForPage',
                                 'currentPageNumber',
+                                'countMobs',
                                 'quantityPages',
                                 'attackTypeList',
                                 'raceList'));
@@ -72,11 +73,11 @@ class MobController extends \yii\web\Controller
 
     public function getQuantityPages($idsMobs, $quantityItemInPage)
     {
-        if ($idsMobs === 'all') {
+        if ($idsMobs) {
+            $mobCount = count($idsMobs);
+        } else {
             $mobCount = Mob::find()
                     ->count();
-        } else {
-            $mobCount = count($idsMobs);
         }
 
         $quantityPages = ceil($mobCount / $quantityItemInPage);
@@ -86,26 +87,33 @@ class MobController extends \yii\web\Controller
 
     public function checkPagesRange($quantityPages)
     {
+        $stringGetParam = strstr($_SERVER["REQUEST_URI"], '&');
         if ($_GET['page-number']) {
 
             $currentPageNumber = $_GET['page-number'];
 
             if ($currentPageNumber < 1) {
                 $currentPageNumber = 1;
-                $this->redirect('/mob/?page-number=1');
+                $this->redirect('/mob/?page-number=1' . $stringGetParam);
             } elseif ($currentPageNumber > $quantityPages) {
                 $currentPageNumber = $quantityPages;
-                $this->redirect('/mob/?page-number=' . $quantityPages);
+                $this->redirect('/mob/?page-number=' . $quantityPages . $stringGetParam);
             }
         } else {
             $currentPageNumber = 1;
-            $this->redirect('/mob/?page-number=1');
+            $this->redirect('/mob/?page-number=1' . $stringGetParam);
         }
         return $currentPageNumber;
     }
 
     public function getIdsMobsWithFilter()
     {
+        $idsAllMobs = Mob::find()
+                ->select('id')
+                ->asArray()
+                ->all();
+        $idsAllMobs = ArrayHelper::getColumn($idsAllMobs, 'id');
+
         if ($_GET['attack-type']) {
 
             $attackTypeValues = explode(',', $_GET['attack-type']);
@@ -114,8 +122,12 @@ class MobController extends \yii\web\Controller
                     ->where(['paramValue' => $attackTypeValues])
                     ->asArray()
                     ->all();
-            $idsMobs = ArrayHelper::getColumn($idsMobs, 'mobId');
-        } elseif ($_GET['race']) {
+            $idsMobsAttackType = ArrayHelper::getColumn($idsMobs, 'mobId');
+        } else {
+            $idsMobsAttackType = $idsAllMobs;
+        }
+
+        if ($_GET['race']) {
 
             $raceValues = explode(',', $_GET['race']);
 
@@ -128,16 +140,27 @@ class MobController extends \yii\web\Controller
                     ->asArray()
                     ->all();
 
-            $idsMobs = ArrayHelper::getColumn($idsMobs, 'mobId');
-        } elseif ($_GET['photo']) {
+            $idsMobsRace = ArrayHelper::getColumn($idsMobs, 'mobId');
+        } else {
+            $idsMobsRace = $idsAllMobs;
+        }
+
+        if ($_GET['with-photo'] == 1) {
 
             $idsMobs = Mob::find()
                     ->select('id')
                     ->where(['not', ['imageFileName' => '']])
                     ->asArray()
                     ->all();
+            $idsMobsPhoto = ArrayHelper::getColumn($idsMobs, 'id');
         } else {
-            $idsMobs = 'all';
+            $idsMobsPhoto = $idsAllMobs;
+        }
+
+        if ($idsMobsAttackType || $idsMobsRace || $idsMobsPhoto) {
+            $idsMobs = array_intersect($idsMobsAttackType, $idsMobsRace, $idsMobsPhoto);
+        } else {
+            $idsMobs = $idsAllMobs;
         }
 
 
@@ -147,17 +170,18 @@ class MobController extends \yii\web\Controller
     public function getMobsForPage($idsMobs, $quantityItemInPage, $currentPageGet)
     {
         //var_dump($idsMobs);die;
-        if ($idsMobs !== 'all') {
+        if ($idsMobs) {
             $mobsForPage = Mob::find()
                     ->where(['id' => $idsMobs])
                     ->offset($quantityItemInPage * ($currentPageGet - 1))
                     ->limit($quantityItemInPage)
                     ->all();
         } else {
-            $mobsForPage = Mob::find()
-                    ->offset($quantityItemInPage * ($currentPageGet - 1))
-                    ->limit($quantityItemInPage)
-                    ->all();
+//            $mobsForPage = Mob::find()
+//                    ->offset($quantityItemInPage * ($currentPageGet - 1))
+//                    ->limit($quantityItemInPage)
+//                    ->all();
+            $mobsForPage = [];
         }
         return $mobsForPage;
     }
