@@ -12,9 +12,8 @@ use Yii;
  */
 class Param extends \yii\db\ActiveRecord
 {
-    /**
-     * {@inheritdoc}
-     */
+    const ATTACK_TYPE_ID = 12;
+
     public static function tableName()
     {
         return 'param';

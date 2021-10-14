@@ -1,4 +1,6 @@
 <?php
+use app\models\Skill;
+use app\services\StringService;
 $currentGetAttackTypeArray = isset($_GET['attack-type']) ? explode(',', $_GET['attack-type']) : [];
 $currentGetRaceArray = isset($_GET['race']) ? explode(',', $_GET['race']) : [];
 ?>
@@ -11,11 +13,11 @@ $currentGetRaceArray = isset($_GET['race']) ? explode(',', $_GET['race']) : [];
         <li class="header">Тип атаки</li>
         <?php foreach ($attackTypeList as $listElement) : ?>
             <li>
-                <a href="?<?= $filterService->rebuildAttackTypeGetParameter($listElement); ?>">
+                <a href="?<?= $filterService->rebuildAttackTypeGetParameter($listElement->paramValue); ?>">
                     <div class="form-check">
-                        <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $filterService->checked($listElement, $currentGetAttackTypeArray); ?>>
+                        <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $filterService->checked($listElement->paramValue, $currentGetAttackTypeArray); ?>>
                         <label class="form-check-label" for="flexCheckDefault">
-                            <?= ucfirst($listElement); ?>
+                            <?= ucfirst($listElement->paramValue); ?>
                         </label>
                     </div>
                 </a>
@@ -26,18 +28,28 @@ $currentGetRaceArray = isset($_GET['race']) ? explode(',', $_GET['race']) : [];
     <ul class="sidebar-navigation">
         <li class="header">Рассы</li>
         <?php foreach ($raceList as $listElement) : ?>
-            <?php $listElement = strtolower($listElement); ?>
+            <?php $listElement = mb_strtolower($listElement->description); ?>
             <li>
                 <a href="?<?= $filterService->rebuildRaceGetParameter($listElement); ?>">
                     <div class="form-check">
                         <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $filterService->checked($listElement, $currentGetRaceArray); ?>>
                         <label class="form-check-label" for="flexCheckDefault">
-                            <?= ucfirst($listElement); ?>
+                            <?= StringService::mb_ucfirst($listElement); ?>
                         </label>
                     </div>
                 </a>
             </li>
         <?php endforeach; ?>
+<!--        <li>
+            <a href="?<?= $filterService->rebuildRaceGetParameter(Skill::NO_RACE); ?>">
+                <div class="form-check">
+                    <input class="form-check-input mt-0" type="checkbox" value="" id="flexCheckDefault" <?= $filterService->checked(Skill::NO_RACE, $currentGetRaceArray); ?>>
+                    <label class="form-check-label" for="flexCheckDefault">
+                        Без рассы
+                    </label>
+                </div>
+            </a>
+        </li>-->
     </ul>
 
     <ul class="sidebar-navigation">

@@ -111,3 +111,7 @@
 .content-container {
     padding-left: 220px;
 }
+main > .container {
+    max-width: 1920px;
+}
+

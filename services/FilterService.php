@@ -2,16 +2,20 @@
 
 namespace app\services;
 
+const TITLE_RACE_GET_GROUP = 'race';
+const TITLE_ATTACK_TYPE_GET_GROUP = 'attack-type';
+const FIRST_PEGE = 'page-number=1';
+
 class FilterService
 {
 
     public function rebuildAttackTypeGetParameter($filterListElement)
     {
-        $getParamString = 'page-number=1';
-        $getParamString .= $this->buildFilterGroupString($filterGroup = 'attack-type', $filterListElement);
+        $getParamString = FIRST_PEGE;
+        $getParamString .= $this->buildFilterGroupString(TITLE_ATTACK_TYPE_GET_GROUP, $filterListElement);
 
-        if ($_GET['race']) {
-            $getParamString .= '&race=' . $_GET['race'];
+        if ($_GET[TITLE_RACE_GET_GROUP]) {
+            $getParamString .= '&' . TITLE_RACE_GET_GROUP . '=' . $_GET[TITLE_RACE_GET_GROUP];
         }
 
         if ($_GET['with-photo']) {
@@ -23,13 +27,17 @@ class FilterService
 
     public function rebuildRaceGetParameter($filterListElement)
     {
-        $getParamString = 'page-number=1';
+        $getParamString = FIRST_PEGE;
 
-        if ($_GET['attack-type']) {
-            $getParamString .= '&attack-type=' . $_GET['attack-type'];
+        if ($filterListElement == 'без рассы') {
+            $filterListElement = 'no-race';
         }
 
-        $getParamString .= $this->buildFilterGroupString($filterGroup = 'race', $filterListElement);
+        if ($_GET[TITLE_ATTACK_TYPE_GET_GROUP]) {
+            $getParamString .= '&' . TITLE_ATTACK_TYPE_GET_GROUP . '=' . $_GET[TITLE_ATTACK_TYPE_GET_GROUP];
+        }
+
+        $getParamString .= $this->buildFilterGroupString(TITLE_RACE_GET_GROUP, $filterListElement);
 
         if ($_GET['with-photo']) {
             $getParamString .= '&with-photo=' . $_GET['with-photo'];
@@ -40,14 +48,14 @@ class FilterService
 
     public function rebuildPhotoGetParameter()
     {
-        $getParamString = 'page-number=1';
+        $getParamString = FIRST_PEGE;
 
-        if ($_GET['attack-type']) {
-            $getParamString .= '&attack-type=' . $_GET['attack-type'];
+        if ($_GET[TITLE_ATTACK_TYPE_GET_GROUP]) {
+            $getParamString .= '&' . TITLE_ATTACK_TYPE_GET_GROUP . '=' . $_GET[TITLE_ATTACK_TYPE_GET_GROUP];
         }
 
-        if ($_GET['race']) {
-            $getParamString .= '&race=' . $_GET['race'];
+        if ($_GET[TITLE_RACE_GET_GROUP]) {
+            $getParamString .= '&' . TITLE_RACE_GET_GROUP . '=' . $_GET[TITLE_RACE_GET_GROUP];
         }
 
         if (!$_GET['with-photo']) {
@@ -81,6 +89,10 @@ class FilterService
 
     public function checked($filterElement, $currentFilterListArray)
     {
+        if ($filterElement == 'без рассы') {
+            $filterElement = 'no-race';
+        }
+
         if (in_array($filterElement, $currentFilterListArray)) {
             $checked = 'checked';
         } else {

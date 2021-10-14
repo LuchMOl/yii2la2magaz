@@ -15,9 +15,10 @@ use Yii;
  */
 class Skill extends \yii\db\ActiveRecord
 {
-    /**
-     * {@inheritdoc}
-     */
+
+    const RACE = 'Race';
+    const NO_RACE = 'no-race';
+
     public static function tableName()
     {
         return 'skill';
@@ -50,4 +51,5 @@ class Skill extends \yii\db\ActiveRecord
             'imageFileName' => 'Image File Name',
         ];
     }
+
 }

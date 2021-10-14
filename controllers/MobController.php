@@ -2,6 +2,7 @@
 
 namespace app\controllers;
 
+use Yii;
 use app\models\Mob;
 use app\models\MobParam;
 use app\models\Skill;
@@ -13,28 +14,24 @@ use yii\helpers\Url;
 use yii\web\YiiAsset;
 use yii\helpers\ArrayHelper;
 
+const QUANTYITY_ITEM_IN_PAGE = 30;
+
 class MobController extends \yii\web\Controller
 {
 
     public function actionIndex()
     {
-
-        $quantityItemInPage = 30;
-
-        $attackTypeList = $this->getParamList($this->getParamId('Тип атаки'));
+        $attackTypeList = $this->getParamList(Param::ATTACK_TYPE_ID);
 
         $raceList = $this->getRaceList();
 
-        $idsMobs = $this->getIdsMobsWithFilter();
-        $countMobs = count($idsMobs);
+        $countMobs = $this->countMobsWithFilters();
 
-        $quantityPages = $this->getQuantityPages($idsMobs, $quantityItemInPage);
+        $quantityPages = $this->getQuantityPages($countMobs);
 
         $currentPageNumber = $this->checkPagesRange($quantityPages);
 
-        $mobsForPage = $this->getMobsForPage($idsMobs, $quantityItemInPage, $currentPageNumber);
-
-        //var_dump($currentPageNumber);die;
+        $mobsForPage = $this->getMobsForPageWithFilter($currentPageNumber);
 
         return $this->render('index', compact('mobsForPage',
                                 'currentPageNumber',
@@ -71,16 +68,59 @@ class MobController extends \yii\web\Controller
         return $this->render('singleMob', compact('mob', 'mobParam', 'mobSkill', 'mobDrop', 'mobSweep'));
     }
 
-    public function getQuantityPages($idsMobs, $quantityItemInPage)
+    public function getParamList($paramId)
     {
-        if ($idsMobs) {
-            $mobCount = count($idsMobs);
+        $paramList = MobParam::find()
+                ->select('paramValue')
+                ->distinct()
+                ->where(['paramId' => $paramId])
+                ->all();
+
+        return $paramList;
+    }
+
+    public function getRaceList()
+    {
+        $raceList = Skill::find()
+                ->select('description')
+                ->distinct()
+                ->where(['title' => Skill::RACE])
+                ->all();
+
+        $noRace = new Skill();
+        $noRace->description = 'Без рассы';
+        $raceList[] = $noRace;
+
+        return $raceList;
+    }
+
+    public function countMobsWithFilters()
+    {
+        $filtersQueryPart = $this->buildFiltersQueryPart();
+
+        if ($filtersQueryPart != -1) {
+            $quantityMobs = Yii::$app->db->createCommand("SELECT COUNT(m.id)
+                                    FROM mob AS m
+                                    LEFT JOIN mob_skill AS m_s ON m_s.mobId = m.id
+                                    JOIN skill AS s ON m_s.skillId = s.id AND s.title = '" . Skill::RACE . "'
+                                    JOIN mob_param AS m_p ON m_p.mobId = m.id AND m_p.paramId = '" . Param::ATTACK_TYPE_ID . "'
+                                    WHERE " . $filtersQueryPart)
+                    ->queryScalar();
         } else {
-            $mobCount = Mob::find()
+            $quantityMobs = Mob::find()
                     ->count();
         }
 
-        $quantityPages = ceil($mobCount / $quantityItemInPage);
+        return $quantityMobs;
+    }
+
+    public function getQuantityPages($countMobs)
+    {
+        if ($countMobs < QUANTYITY_ITEM_IN_PAGE) {
+            $quantityPages = 1;
+        } else {
+            $quantityPages = ceil($countMobs / QUANTYITY_ITEM_IN_PAGE);
+        }
 
         return $quantityPages;
     }
@@ -88,6 +128,7 @@ class MobController extends \yii\web\Controller
     public function checkPagesRange($quantityPages)
     {
         $stringGetParam = strstr($_SERVER["REQUEST_URI"], '&');
+
         if ($_GET['page-number']) {
 
             $currentPageNumber = $_GET['page-number'];
@@ -106,130 +147,66 @@ class MobController extends \yii\web\Controller
         return $currentPageNumber;
     }
 
-    public function getIdsMobsWithFilter()
+    public function getMobsForPageWithFilter($currentPageNumber)
     {
-        $idsAllMobs = Mob::find()
-                ->select('id')
-                ->asArray()
-                ->all();
-        $idsAllMobs = ArrayHelper::getColumn($idsAllMobs, 'id');
+        $filtersQueryPart = $this->buildFiltersQueryPart();
 
-        if ($_GET['attack-type']) {
+        if ($filtersQueryPart != -1) {
 
-            $attackTypeValues = explode(',', $_GET['attack-type']);
-
-            $idsMobs = MobParam::find()
-                    ->where(['paramValue' => $attackTypeValues])
-                    ->asArray()
-                    ->all();
-            $idsMobsAttackType = ArrayHelper::getColumn($idsMobs, 'mobId');
-        } else {
-            $idsMobsAttackType = $idsAllMobs;
-        }
-
-        if ($_GET['race']) {
-
-            $raceValues = explode(',', $_GET['race']);
-
-            $skillId = $this->getSkillIdWhere($title = 'Race', $description = $raceValues);
-            $skillId = ArrayHelper::getColumn($skillId, 'id');
-
-            $idsMobs = MobSkill::find()
-                    ->select('mobId')
-                    ->where(['skillId' => $skillId])
-                    ->asArray()
-                    ->all();
-
-            $idsMobsRace = ArrayHelper::getColumn($idsMobs, 'mobId');
-        } else {
-            $idsMobsRace = $idsAllMobs;
-        }
-
-        if ($_GET['with-photo'] == 1) {
-
-            $idsMobs = Mob::find()
-                    ->select('id')
-                    ->where(['not', ['imageFileName' => '']])
-                    ->asArray()
-                    ->all();
-            $idsMobsPhoto = ArrayHelper::getColumn($idsMobs, 'id');
-        } else {
-            $idsMobsPhoto = $idsAllMobs;
-        }
-
-        if ($idsMobsAttackType || $idsMobsRace || $idsMobsPhoto) {
-            $idsMobs = array_intersect($idsMobsAttackType, $idsMobsRace, $idsMobsPhoto);
-        } else {
-            $idsMobs = $idsAllMobs;
-        }
-
-
-        return $idsMobs;
-    }
-
-    public function getMobsForPage($idsMobs, $quantityItemInPage, $currentPageGet)
-    {
-        //var_dump($idsMobs);die;
-        if ($idsMobs) {
-            $mobsForPage = Mob::find()
-                    ->where(['id' => $idsMobs])
-                    ->offset($quantityItemInPage * ($currentPageGet - 1))
-                    ->limit($quantityItemInPage)
+            $mobs = Mob::findBySql("SELECT m.*
+                                    FROM mob AS m
+                                    LEFT JOIN mob_skill AS m_s ON m_s.mobId = m.id
+                                    JOIN skill AS s ON m_s.skillId = s.id AND s.title = '" . Skill::RACE . "'
+                                    JOIN mob_param AS m_p ON m_p.mobId = m.id AND m_p.paramId = '" . Param::ATTACK_TYPE_ID . "'
+                                    WHERE " . $filtersQueryPart . "
+                                    LIMIT " . (QUANTYITY_ITEM_IN_PAGE) . "
+                                    OFFSET " . (QUANTYITY_ITEM_IN_PAGE * ($currentPageNumber - 1)))
                     ->all();
         } else {
-//            $mobsForPage = Mob::find()
-//                    ->offset($quantityItemInPage * ($currentPageGet - 1))
-//                    ->limit($quantityItemInPage)
-//                    ->all();
-            $mobsForPage = [];
+            $mobs = Mob::find()
+                    ->offset(QUANTYITY_ITEM_IN_PAGE * ($currentPageNumber - 1))
+                    ->limit(QUANTYITY_ITEM_IN_PAGE)
+                    ->all();
         }
-        return $mobsForPage;
+
+        return $mobs;
     }
 
-    public function getParamId($paramName)
+    public function buildFiltersQueryPart()
     {
-        $paramId = Param::find()
-                ->where(['paramName' => $paramName])
-                ->one();
-        return $paramId->id;
-    }
+        if ($_GET['attack-type'] && count(explode(',', $_GET['attack-type'])) > 0) {
+            $attackTypeQueryString = "(m_p.paramValue = '" . implode("' OR m_p.paramValue = '", explode(',', $_GET['attack-type'])) . "')";
+        }
 
-    public function getParamList($paramId)
-    {
-        $paramList = MobParam::find()
-                ->select('paramValue')
-                ->distinct()
-                ->where(['paramId' => $paramId])
-                ->asArray()
-                ->all();
-        $paramList = ArrayHelper::getColumn($paramList, 'paramValue');
+        if ($_GET['race'] && count(explode(',', $_GET['race'])) > 0) {
 
-        return $paramList;
-    }
+            $raceArr = explode(',', $_GET['race']);
+            if (in_array('no-race', $raceArr)) {
+                unset($raceArr[array_search('no-race',$raceArr)]);
+            }
 
-    public function getRaceList()
-    {
-        $raceList = Skill::find()
-                ->select('description')
-                ->distinct()
-                ->where(['title' => 'Race'])
-                ->asArray()
-                ->all();
-        $raceList = ArrayHelper::getColumn($raceList, 'description');
+            $raceQueryString = "(s.description = '" . implode("' OR s.description = '", $raceArr) . "')";
+        }
 
-        return $raceList;
-    }
+        if ($attackTypeQueryString && $raceQueryString) {
+            $queryString = "$attackTypeQueryString AND $raceQueryString";
+        } elseif ($attackTypeQueryString) {
+            $queryString = $attackTypeQueryString;
+        } elseif ($raceQueryString) {
+            $queryString = $raceQueryString;
+        } else {
+            $queryString = -1;
+        }
 
-    public function getSkillIdWhere($title, $description)
-    {
-        $skillId = Skill::find()
-                ->select('id')
-                ->andWhere(['title' => $title])
-                ->andWhere(['description' => $description])
-                ->asArray()
-                ->all();
-        //var_dump($skillId);die;
-        return $skillId;
+        if ($_GET['with-photo']) {
+            if ($queryString != -1) {
+                $queryString = $queryString . " AND m.imageFileName <> '' ";
+            } else {
+                $queryString = "m.imageFileName <> '' ";
+            }
+        }
+
+        return $queryString;
     }
 
 }
